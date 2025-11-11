@@ -1,41 +1,54 @@
-import QRCode from "qrcode";
 import Attendance from "../models/Attendance.js";
+import Session from "../models/Session.js";
+import Class from "../models/Class.js";
+import Enrollment from "../models/Enrollment.js";
+import SuspiciousAttempt from "../models/SuspiciousAttempt.js";
 
-export async function generateQRCode(req, res) {
-  const { sessionId } = req.params;
-  if (!sessionId) return res.status(400).json({ message: "Missing sessionId" });
-
-  const url = `${process.env.FRONTEND_URL || "http://localhost:5173"}/scan/${encodeURIComponent(sessionId)}`;
+export const markAttendance = async (req, res) => {
   try {
-    const dataUrl = await QRCode.toDataURL(url, { errorCorrectionLevel: "H" });
-    return res.json({ qrDataUrl: dataUrl, url });
-  } catch (err) {
-    console.error("QR generation error:", err);
-    return res.status(500).json({ message: "QR generation error" });
-  }
-}
+    const { sessionId, classId } = req.body;
+    const studentId = req.user.sub;
+    const ipAddress = req.ip;
+    const userAgent = req.headers["user-agent"];
 
-export async function markAttendance(req, res) {
-  const { sessionId, studentId } = req.body;
-  if (!sessionId || !studentId) return res.status(400).json({ message: "Missing sessionId or studentId" });
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ message: "Invalid QR" });
 
-  const ip = req.clientIp || req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
-  const userAgent = req.headers["user-agent"] || "";
+    const classData = await Class.findById(classId);
 
-  try {
-    const exists = await Attendance.findOne({ sessionId, studentId }).exec();
-    if (exists) return res.status(409).json({ message: "Attendance already recorded for this session" });
+    // Check if student is enrolled
+    const enrolled = await Enrollment.findOne({ classId, studentId });
+    if (!enrolled) return res.status(403).json({ message: "Not enrolled in this class" });
 
-    const record = new Attendance({
+    // IP validation
+    const allowedSubnet = classData.allowedSubnet;
+    const isValid = ipAddress.startsWith(allowedSubnet);
+
+    if (!isValid) {
+      await SuspiciousAttempt.create({
+        sessionId,
+        classId,
+        studentId,
+        ipAddress,
+        userAgent,
+        reason: "IP not within allowed subnet"
+      });
+
+      return res.status(401).json({ message: "Unauthorized Network (Fraud)", ipAddress });
+    }
+
+    // Normal attendance
+    const attendance = await Attendance.create({
       sessionId,
+      classId,
       studentId,
-      ipAddress: ip.replace(/^::ffff:/, ""),
-      userAgent,
+      ipAddress,
+      status: "valid"
     });
-    await record.save();
-    return res.json({ message: "Attendance recorded", record });
+
+    res.json({ message: "Attendance marked", attendance });
+
   } catch (err) {
-    console.error("Failed save attendance:", err);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
-}
+};

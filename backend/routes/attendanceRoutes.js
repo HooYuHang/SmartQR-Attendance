@@ -1,10 +1,8 @@
 import express from "express";
-import { generateQRCode, markAttendance } from "../controllers/attendanceController.js";
-import { ipCheck } from "../middleware/ipCheck.js";
+import { markAttendance } from "../controllers/attendanceController.js";
 
 const router = express.Router();
 
-router.get("/generate/:sessionId", generateQRCode);
-router.post("/mark", ipCheck, markAttendance);
+router.post("/mark", markAttendance);
 
 export default router;

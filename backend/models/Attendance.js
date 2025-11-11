@@ -1,12 +1,11 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true },
-  studentId: { type: String, required: true },
-  ipAddress: { type: String, required: true },
-  userAgent: String,
-  createdAt: { type: Date, default: Date.now },
-  note: String
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+  classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
+  status: { type: String, enum: ['Present', 'Absent'], required: true },
+  ipAddress: { type: String, required: true }, // Store IP address for fraud detection
+  timestamp: { type: Date, default: Date.now }
 });
 
-export default mongoose.model("Attendance", attendanceSchema);
+module.exports = mongoose.model('Attendance', attendanceSchema);
