@@ -40,7 +40,6 @@ export const verifyToken = async (req, res, next) => {
     }
 
     const kid = decodedHeader.header.kid;
-
     // Load keys
     const jwks = await getJwks();
     const key = jwks.find(k => k.kid === kid);

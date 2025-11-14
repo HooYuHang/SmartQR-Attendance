@@ -10,11 +10,12 @@ console.log("COGNITO_REGION:", process.env.COGNITO_REGION);
 console.log("COGNITO_USER_POOL_ID:", process.env.COGNITO_USER_POOL_ID);
 
 import classRoutes from "./routes/classRoutes.js";
-import sessionRoutes from "./routes/sessionRoutes.js";
-import attendanceRoutes from "./routes/attendanceRoutes.js";
-import studentRoutes from "./routes/studentRoutes.js";
 import { verifyToken } from "./middleware/authMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
+import ipRoutes from "./routes/ipRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,11 +48,12 @@ mongoose.connect(process.env.MONGO_URI)
   });
 
 // Routes
-app.use("/class", classRoutes);
-app.use("/session", sessionRoutes);
-app.use("/attendance", attendanceRoutes);
-app.use("/student", studentRoutes);
+app.use("/api", classRoutes);
+app.use("/api/classes", classRoutes); // <-- IMPORTANT
 app.use("/auth", authRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/classes", attendanceRoutes);
+app.use("/api", ipRoutes);
 
 // **Protect /student/me route with Cognito auth**
 app.get("/student/me", verifyToken, (req, res) => {
@@ -62,3 +64,9 @@ app.get("/student/me", verifyToken, (req, res) => {
 app.get("/", (req, res) => res.json({ message: "SmartQR Attendance API" }));
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Instead of app.listen(5000)
+app.listen(5000, "0.0.0.0", () => {
+  console.log("Server running on port 5000");
+});
+

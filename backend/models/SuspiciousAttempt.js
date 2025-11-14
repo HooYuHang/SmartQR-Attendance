@@ -1,24 +1,10 @@
 import mongoose from "mongoose";
 
-const SuspiciousAttemptSchema = new mongoose.Schema({
-  sessionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Session",
-    required: true
-  },
-  classId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Class",
-    required: true
-  },
-  studentId: { 
-    type: String, 
-    required: true // Cognito sub ID 
-  },
-  ipAddress: String,
-  userAgent: String,
-  reason: String,
-  createdAt: { type: Date, default: Date.now }
+const suspiciousAttemptSchema = new mongoose.Schema({
+  classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  attemptedAt: { type: Date, default: Date.now },
+  usedIP: { type: String, required: true },
 });
 
-export default mongoose.model("SuspiciousAttempt", SuspiciousAttemptSchema);
+export default mongoose.model("SuspiciousAttempt", suspiciousAttemptSchema);
