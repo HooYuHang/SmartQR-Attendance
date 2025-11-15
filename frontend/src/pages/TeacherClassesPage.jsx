@@ -8,6 +8,7 @@ export default function TeacherClassesPage() {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
   const [expandedClasses, setExpandedClasses] = useState({});
+  const [expandedStudents, setExpandedStudents] = useState({}); // track enrolled students list
   const navigate = useNavigate();
   const token = getAccessToken();
   const userInfo = getUserInfo();
@@ -35,6 +36,10 @@ export default function TeacherClassesPage() {
       sortedClasses.forEach(c => { initialExpanded[c._id] = true; });
       setExpandedClasses(initialExpanded);
 
+      const initialStudentsExpanded = {};
+      sortedClasses.forEach(c => { initialStudentsExpanded[c._id] = false; });
+      setExpandedStudents(initialStudentsExpanded);
+
     } catch (err) {
       console.error("Error fetching data:", err);
     }
@@ -55,6 +60,22 @@ export default function TeacherClassesPage() {
     } catch (err) {
       console.error(err);
       alert("Server error during enrollment");
+    }
+  };
+
+  const handleRemoveStudent = async (classId, studentId) => {
+    if (!window.confirm("Are you sure you want to remove this student?")) return;
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/remove-student",
+        { classId, studentId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) fetchData();
+      else alert(response.data.message || "Failed to remove student");
+    } catch (err) {
+      console.error(err);
+      alert("Server error while removing student");
     }
   };
 
@@ -96,6 +117,10 @@ export default function TeacherClassesPage() {
     }
   };
 
+  const toggleStudentList = (classId) => {
+    setExpandedStudents(prev => ({ ...prev, [classId]: !prev[classId] }));
+  };
+
   return (
     <div style={{
       backgroundColor: "#1c1c1c",
@@ -120,6 +145,7 @@ export default function TeacherClassesPage() {
         {classes.map((cls) => {
           const isHidden = cls.hidden;
           const isExpanded = expandedClasses[cls._id];
+          const studentsExpanded = expandedStudents[cls._id];
 
           return (
             <div key={cls._id} style={{ ...cardStyle, opacity: isHidden && !isExpanded ? 0.6 : 1 }}>
@@ -166,6 +192,29 @@ export default function TeacherClassesPage() {
 
                     <button onClick={() => handleDeleteClass(cls._id)} style={deleteButton}>Delete Class</button>
                   </div>
+
+                  {/* ====== Collapsible Enrolled Students List ====== */}
+                  <div style={{ marginTop: "15px" }}>
+                    <h4 style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => toggleStudentList(cls._id)}>
+                      Enrolled Students ({cls.students.length})
+                      <span style={{ marginLeft: "8px" }}>{studentsExpanded ? "▲" : "▼"}</span>
+                    </h4>
+
+                    {studentsExpanded && (
+                      <ul style={{ marginTop: "10px" }}>
+                        {cls.students.length === 0 && <p>No students enrolled</p>}
+                        {cls.students.map(studentId => {
+                          const student = students.find(s => s._id === studentId);
+                          return (
+                            <li key={studentId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+                              <span>{student ? `${student.name} (${student.email})` : studentId}</span>
+                              <button onClick={() => handleRemoveStudent(cls._id, studentId)} style={removeButton}>Remove</button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
                 </>
               )}
 
@@ -183,59 +232,11 @@ export default function TeacherClassesPage() {
   );
 }
 
-const backButtonStyle = {
-  position: "absolute",
-  top: "20px",
-  right: "20px",
-  padding: "10px 20px",
-  fontSize: "14px",
-  backgroundColor: "#f44336",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-
-const cardStyle = {
-  backgroundColor: "#2c2c2c",
-  padding: "20px",
-  borderRadius: "12px",
-  boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-};
-
-const selectStyle = {
-  padding: "8px",
-  borderRadius: "6px",
-  border: "1px solid #555",
-  backgroundColor: "#1c1c1c",
-  color: "#fff",
-  minWidth: "180px",
-};
-
-const primaryButton = {
-  padding: "8px 16px",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: "#007bff",
-  color: "#fff",
-  cursor: "pointer",
-};
-
-const greenButton = {
-  ...primaryButton,
-  backgroundColor: "#28a745",
-};
-
-const deleteButton = {
-  ...primaryButton,
-  backgroundColor: "#dc3545",
-};
-
-const toggleButton = {
-  marginTop: "10px",
-  padding: "6px 12px",
-  borderRadius: "6px",
-  border: "none",
-  color: "#fff",
-  cursor: "pointer",
-};
+const backButtonStyle = { position: "absolute", top: "20px", right: "20px", padding: "10px 20px", fontSize: "14px", backgroundColor: "#f44336", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const cardStyle = { backgroundColor: "#2c2c2c", padding: "20px", borderRadius: "12px", boxShadow: "0 0 10px rgba(0,0,0,0.5)" };
+const selectStyle = { padding: "8px", borderRadius: "6px", border: "1px solid #555", backgroundColor: "#1c1c1c", color: "#fff", minWidth: "180px" };
+const primaryButton = { padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#007bff", color: "#fff", cursor: "pointer" };
+const greenButton = { ...primaryButton, backgroundColor: "#28a745" };
+const deleteButton = { ...primaryButton, backgroundColor: "#dc3545" };
+const toggleButton = { marginTop: "10px", padding: "6px 12px", borderRadius: "6px", border: "none", color: "#fff", cursor: "pointer" };
+const removeButton = { padding: "4px 10px", borderRadius: "4px", border: "none", backgroundColor: "#f44336", color: "#fff", cursor: "pointer" };

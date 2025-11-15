@@ -18,21 +18,33 @@ export default function AttendancePage() {
       try {
         setLoading(true);
 
+        // Fetch class details
         const classRes = await axios.get(
           `http://localhost:5000/api/classes/${classId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setClassInfo(classRes.data);
 
+        // Fetch attendance (correct backend route)
         const attRes = await axios.get(
           `http://localhost:5000/api/classes/${classId}/attendance`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (attRes.data.success) {
-          setAttendanceData(attRes.data.attendance || []);
+          const processed = attRes.data.attendance.map((a) => ({
+            ...a,
+            studentName: a.studentName || a.name || "Unknown",
+            studentEmail: a.studentEmail || a.email || "Unknown",
+          }));
+
+          const sorted = processed.sort((a, b) =>
+            a.studentName.localeCompare(b.studentName)
+          );
+
+          setAttendanceData(sorted);
         } else {
-          setErrorMsg(attRes.data.message || "No attendance data found");
+          setErrorMsg(attRes.data.message || "No attendance found");
         }
       } catch (err) {
         console.error("Attendance fetch error:", err);
@@ -41,59 +53,50 @@ export default function AttendancePage() {
         setLoading(false);
       }
     };
+
     fetchAttendance();
   }, [classId, token]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "N/A";
     const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? "Invalid Date" : d.toLocaleDateString();
+    return !isNaN(d.getTime()) ? d.toLocaleDateString() : "Invalid Date";
   };
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "N/A";
     const d = new Date(`2000-01-01T${timeStr}`);
-    return isNaN(d.getTime())
-      ? "Invalid Time"
-      : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return !isNaN(d.getTime())
+      ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "Invalid Time";
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "flex-start",
-      minHeight: "100vh",
-      backgroundColor: "#222",
-      color: "#fff",
-      padding: "30px",
-      fontSize: "18px",
-      textAlign: "center",
-    }}>
+    <div style={containerStyle}>
+      {/* NEW Back button to TeacherClassesPage */}
+      <button
+        onClick={() => navigate("/teacher/dashboard/classes")}
+        style={smallBackButtonStyle}
+      >
+        ← Back
+      </button>
+
+      {/* Keep your original Back to Dashboard button */}
       <button
         onClick={() => navigate("/teacher/dashboard")}
-        style={{
-          padding: "12px 24px",
-          fontSize: "16px",
-          backgroundColor: "#f44336",
-          color: "#fff",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          alignSelf: "flex-end",
-          marginBottom: "25px"
-        }}
+        style={backButtonStyle}
       >
         Back to Dashboard
       </button>
 
-      <h1 style={{ fontSize: "2rem", marginBottom: "20px" }}>Class Attendance 📝</h1>
+      <h1 style={titleStyle}>Class Attendance 📝</h1>
 
       {classInfo ? (
-        <p style={{ textAlign: "center", fontSize: "1.1rem", marginBottom: "25px" }}>
-          <strong>{classInfo.subject || "N/A"}</strong> | Classroom: {classInfo.classRoom || "N/A"} | Date:{" "}
-          {formatDate(classInfo.classDate)} | Time: {formatTime(classInfo.classTime)}
+        <p style={classInfoStyle}>
+          <strong>{classInfo.subject || "N/A"}</strong> | Classroom:{" "}
+          {classInfo.classRoom || "N/A"} | Date:{" "}
+          {formatDate(classInfo.classDate)} | Time:{" "}
+          {formatTime(classInfo.classTime)}
         </p>
       ) : (
         <p>Loading class info...</p>
@@ -106,8 +109,8 @@ export default function AttendancePage() {
       ) : attendanceData.length === 0 ? (
         <p>No attendance records found.</p>
       ) : (
-        <div style={{ overflowX: "auto", width: "100%", maxWidth: "1000px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px", fontSize: "1rem" }}>
+        <div style={tableWrapperStyle}>
+          <table style={tableStyle}>
             <thead>
               <tr>
                 <th style={thStyle}>Student Name</th>
@@ -117,22 +120,59 @@ export default function AttendancePage() {
                 <th style={thStyle}>Timestamp</th>
               </tr>
             </thead>
+
             <tbody>
-              {attendanceData.map((att) => (
-                <tr key={att._id} style={{ backgroundColor: att.isFraud ? "#422826" : "#333" }}>
-                  <td style={tdStyle}>{att.studentName}</td>
-                  <td style={tdStyle}>{att.studentEmail}</td>
-                  <td style={{ ...tdStyle, color: att.status === "present" ? "#4caf50" : "#ff9800" }}>
-                    {att.status?.toUpperCase() || "N/A"}
-                  </td>
-                  <td style={{ ...tdStyle, color: att.isFraud ? "#f44336" : "#4caf50" }}>
-                    {att.isFraud ? "YES" : "NO"}
-                  </td>
-                  <td style={tdStyle}>
-                    {att.timestamp ? new Date(att.timestamp).toLocaleString() : "N/A"}
-                  </td>
-                </tr>
-              ))}
+              {attendanceData.map((att) => {
+                const isPresent = att.status === "present";
+                const isAbsent = att.status === "absent";
+                const isFraud = att.isFraud;
+
+                return (
+                  <tr
+                    key={att._id || att.studentId}
+                    style={{
+                      backgroundColor: isFraud
+                        ? "#422826"
+                        : isPresent
+                        ? "#1e3d25"
+                        : "#333",
+                    }}
+                  >
+                    <td style={tdStyle}>{att.studentName}</td>
+                    <td style={tdStyle}>{att.studentEmail}</td>
+
+                    <td
+                      style={{
+                        ...tdStyle,
+                        color: isPresent
+                          ? "#4caf50"
+                          : isAbsent
+                          ? "#ff9800"
+                          : "#fff",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {att.status?.toUpperCase() || "UNKNOWN"}
+                    </td>
+
+                    <td
+                      style={{
+                        ...tdStyle,
+                        color: isFraud ? "#f44336" : "#4caf50",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {isFraud ? "YES" : "NO"}
+                    </td>
+
+                    <td style={tdStyle}>
+                      {att.timestamp
+                        ? new Date(att.timestamp).toLocaleString()
+                        : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -140,6 +180,69 @@ export default function AttendancePage() {
     </div>
   );
 }
+
+/* ========== STYLES ========== */
+
+const containerStyle = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  minHeight: "100vh",
+  backgroundColor: "#222",
+  color: "#fff",
+  padding: "30px",
+  textAlign: "center",
+};
+
+/* Your original button (kept) */
+const backButtonStyle = {
+  padding: "12px 24px",
+  fontSize: "16px",
+  backgroundColor: "#f44336",
+  color: "#fff",
+  border: "none",
+  borderRadius: "8px",
+  cursor: "pointer",
+  alignSelf: "flex-end",
+  marginBottom: "25px",
+};
+
+/* New small back button to class list */
+const smallBackButtonStyle = {
+  padding: "8px 16px",
+  fontSize: "14px",
+  backgroundColor: "#555",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
+  alignSelf: "flex-start",
+  marginBottom: "15px",
+};
+
+const titleStyle = {
+  fontSize: "2rem",
+  marginBottom: "20px",
+};
+
+const classInfoStyle = {
+  textAlign: "center",
+  fontSize: "1.1rem",
+  marginBottom: "25px",
+};
+
+const tableWrapperStyle = {
+  overflowX: "auto",
+  width: "100%",
+  maxWidth: "1000px",
+};
+
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginTop: "20px",
+  fontSize: "1rem",
+};
 
 const thStyle = {
   borderBottom: "2px solid #fff",

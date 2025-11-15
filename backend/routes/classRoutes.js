@@ -65,40 +65,49 @@ router.post("/classes/:classId/mark-attendance", verifyToken, markAttendance);
 
 router.get("/classes/:classId/attendance", verifyToken, async (req, res) => {
   try {
-    let { classId } = req.params;
-    classId = classId.trim(); // remove any whitespace
+    const { classId } = req.params;
 
-    // Remove strict ObjectId check for now
-    // if (!mongoose.Types.ObjectId.isValid(classId))
-    //   return res.status(400).json({ success: false, message: "Invalid class ID" });
+    const classData = await Class.findById(classId)
+      .populate("teacherId", "name email")
+      .populate("students", "name email");
 
-    // Fetch attendance
-    const attendanceRecords = await Attendance.find({ classId }).lean(); // treat classId as string
-
-    if (!attendanceRecords || attendanceRecords.length === 0) {
-      return res.json({ success: true, attendance: [] });
+    if (!classData) {
+      return res.status(404).json({ success: false, message: "Class not found" });
     }
 
-    const studentIds = attendanceRecords.map(a => a.studentId).filter(Boolean).map(id => id.toString());
-    const students = await User.find({ _id: { $in: studentIds } }).lean();
+    const attendance = await Attendance.find({ classId })
+      .populate("studentId", "name email")
+      .lean();
 
-    const studentMap = {};
-    students.forEach(s => {
-      studentMap[s._id.toString()] = { name: s.name, email: s.email };
+    const studentIds = classData.students.map(s => s._id.toString());
+    const attendanceMap = new Map(attendance.map(a => [a.studentId._id.toString(), a]));
+
+    const finalAttendance = studentIds.map(studentId => {
+      const student = classData.students.find(s => s._id.toString() === studentId);
+      const record = attendanceMap.get(studentId);
+
+      return {
+        studentId,
+        name: student?.name || "Unknown",
+        email: student?.email || "Unknown",
+        status: record ? record.status : "absent",
+        isFraud: record ? record.isFraud : false,
+        timestamp: record ? record.timestamp : null,
+      };
     });
 
-    const enriched = attendanceRecords.map(a => ({
-      ...a,
-      studentName: studentMap[a.studentId?.toString()]?.name || "Unknown",
-      studentEmail: studentMap[a.studentId?.toString()]?.email || "Unknown",
-    }));
+    return res.json({
+      success: true,
+      class: classData,
+      attendance: finalAttendance,
+    });
 
-    res.json({ success: true, attendance: enriched });
   } catch (err) {
-    console.error("Error fetching class attendance:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching attendance:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 
 router.get("/classes/:classId", verifyToken, async (req, res) => {
@@ -114,3 +123,4 @@ router.get("/classes/:classId", verifyToken, async (req, res) => {
 });
 
 export default router;
+

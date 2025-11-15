@@ -27,7 +27,12 @@ export default function AttendanceHistoryPage() {
         );
 
         if (res.data?.timetable) {
-          setTimetable(res.data.timetable);
+          // ✅ Sort descending by date (latest first)
+          const sorted = [...res.data.timetable].sort(
+            (a, b) => new Date(b.classDate) - new Date(a.classDate)
+          );
+
+          setTimetable(sorted);
         } else {
           setError("No timetable data available");
         }
@@ -41,7 +46,8 @@ export default function AttendanceHistoryPage() {
 
     fetchTimetable();
 
-    const interval = setInterval(fetchTimetable, 10000); // auto-refresh
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchTimetable, 10000);
     return () => clearInterval(interval);
   }, [token, user?.sub]);
 

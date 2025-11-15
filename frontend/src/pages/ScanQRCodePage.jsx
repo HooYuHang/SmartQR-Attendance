@@ -16,6 +16,7 @@ export default function ScanQRCodePage() {
   const [detectedIP, setDetectedIP] = useState("Unknown");
   const [loadingMark, setLoadingMark] = useState(false);
 
+  // Fetch enrolled classes
   useEffect(() => {
     const fetchEnrolledClasses = async () => {
       if (!token || !user?.sub) return;
@@ -25,7 +26,16 @@ export default function ScanQRCodePage() {
           `http://localhost:5000/api/student/timetable/${user.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setEnrolledClasses(res.data.timetable || []);
+
+        if (res.data?.timetable) {
+          // ✅ Sort by latest date (descending)
+          const sorted = [...res.data.timetable].sort(
+            (a, b) => new Date(b.classDate) - new Date(a.classDate)
+          );
+          setEnrolledClasses(sorted);
+        } else {
+          setEnrolledClasses([]);
+        }
       } catch (err) {
         console.error("Failed to fetch classes:", err);
         setQRMessage("Failed to load classes. Please sign in again.");
@@ -34,6 +44,7 @@ export default function ScanQRCodePage() {
     fetchEnrolledClasses();
   }, [token, user?.sub]);
 
+  // Fetch latest QR for selected class
   useEffect(() => {
     const fetchQR = async () => {
       if (!selectedClassId) return;
@@ -81,8 +92,9 @@ export default function ScanQRCodePage() {
       if (res.data?.success) {
         const status = res.data.status || "present";
         setAttendanceMessage(`✅ Attendance marked as ${status.toUpperCase()}`);
-        setEnrolledClasses(prev =>
-          prev.map(cls =>
+
+        setEnrolledClasses((prev) =>
+          prev.map((cls) =>
             cls._id === selectedClassId ? { ...cls, attendanceStatus: status } : cls
           )
         );
@@ -92,9 +104,11 @@ export default function ScanQRCodePage() {
     } catch (err) {
       console.error("Attendance error:", err);
       const statusCode = err.response?.status;
+
       if (statusCode === 401) setAttendanceMessage("❌ Not authenticated. Please re-sign in.");
       else if (statusCode === 403) setAttendanceMessage("❌ Fraud detected: Wrong Wi-Fi network.");
-      else if (statusCode === 400) setAttendanceMessage(`❌ ${err.response?.data?.message || "QR expired or not available."}`);
+      else if (statusCode === 400)
+        setAttendanceMessage(`❌ ${err.response?.data?.message || "QR expired or not available."}`);
       else setAttendanceMessage("❌ Attendance failed. Try again.");
     } finally {
       setLoadingMark(false);
@@ -117,9 +131,12 @@ export default function ScanQRCodePage() {
           style={selectStyle}
         >
           <option value="">Select a class</option>
+
+          {/* ✅ Dropdown now sorted by latest classDate */}
           {enrolledClasses.map((cls) => (
             <option key={cls._id} value={cls._id}>
-              {cls.subject} - {cls.classRoom} | {cls.classDate} {cls.classTime} | Status: {cls.attendanceStatus || "absent"}
+              {cls.subject} - {cls.classRoom} | {cls.classDate} {cls.classTime} | Status:{" "}
+              {cls.attendanceStatus || "absent"}
             </option>
           ))}
         </select>
@@ -132,28 +149,31 @@ export default function ScanQRCodePage() {
           <img
             src={qrImage}
             alt="QR Code"
-            style={{ width: "300px", height: "300px", border: "3px solid #fff", borderRadius: "12px" }}
+            style={{
+              width: "300px",
+              height: "300px",
+              border: "3px solid #fff",
+              borderRadius: "12px",
+            }}
           />
         )}
+
         {!qrImage && qrMessage && <p style={{ color: "orange", marginTop: "10px" }}>{qrMessage}</p>}
       </div>
 
       {qrImage && (
-        <button
-          onClick={handleMarkAttendance}
-          disabled={loadingMark}
-          style={markButtonStyle}
-        >
+        <button onClick={handleMarkAttendance} disabled={loadingMark} style={markButtonStyle}>
           {loadingMark ? "Marking..." : "Mark Attendance"}
         </button>
       )}
 
-      {attendanceMessage && <p style={{ marginTop: "15px", fontWeight: "bold", color: "yellow" }}>{attendanceMessage}</p>}
+      {attendanceMessage && (
+        <p style={{ marginTop: "15px", fontWeight: "bold", color: "yellow" }}>
+          {attendanceMessage}
+        </p>
+      )}
 
-      <button
-        onClick={() => navigate("/student/dashboard")}
-        style={backButtonStyle}
-      >
+      <button onClick={() => navigate("/student/dashboard")} style={backButtonStyle}>
         Back to Dashboard
       </button>
     </div>
