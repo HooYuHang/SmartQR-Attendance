@@ -63,10 +63,10 @@ app.get("/student/me", verifyToken, (req, res) => {
 // Test route
 app.get("/", (req, res) => res.json({ message: "SmartQR Attendance API" }));
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+//app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Instead of app.listen(5000)
-app.listen(5000, "0.0.0.0", () => {
-  console.log("Server running on port 5000");
-});
+//.listen(5000, "0.0.0.0", () => {
+  //console.log("Server running on port 5000");
+//});
 

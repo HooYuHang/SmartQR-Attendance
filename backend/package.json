@@ -12,6 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1693.0",
+    "aws-serverless-express": "^3.4.0",
     "axios": "^1.13.2",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
