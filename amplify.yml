@@ -1,0 +1,18 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd SmartQR-Attendance/frontend
+        - npm install
+    build:
+      commands:
+        - cd SmartQR-Attendance/frontend
+        - npm run build
+  artifacts:
+    baseDirectory: SmartQR-Attendance/frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - SmartQR-Attendance/frontend/node_modules/**/* 
