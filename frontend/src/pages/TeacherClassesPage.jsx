@@ -5,14 +5,26 @@ import { getAccessToken, getUserInfo } from "../auth";
 
 export default function TeacherClassesPage() {
   const [classes, setClasses] = useState([]);
+  const [filteredClasses, setFilteredClasses] = useState([]);
+
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
+
   const [expandedClasses, setExpandedClasses] = useState({});
-  const [expandedStudents, setExpandedStudents] = useState({}); // track enrolled students list
+  const [expandedStudents, setExpandedStudents] = useState({});
+
+  // ⭐ Filter states
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterWeek, setFilterWeek] = useState("");
+  const [filterSubject, setFilterSubject] = useState("");
+
   const navigate = useNavigate();
   const token = getAccessToken();
   const userInfo = getUserInfo();
 
+  // ==============================
+  // Fetch Classes + Students
+  // ==============================
   const fetchData = async () => {
     try {
       const classesRes = await axios.get(
@@ -25,11 +37,14 @@ export default function TeacherClassesPage() {
         const dtB = new Date(`${b.classDate}T${b.classTime}`);
         return dtB - dtA;
       });
-      setClasses(sortedClasses);
 
-      const studentsRes = await axios.get("http://localhost:5000/api/students", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      setClasses(sortedClasses);
+      setFilteredClasses(sortedClasses);
+
+      const studentsRes = await axios.get(
+        "http://localhost:5000/api/students",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setStudents(studentsRes.data);
 
       const initialExpanded = {};
@@ -47,6 +62,38 @@ export default function TeacherClassesPage() {
 
   useEffect(() => { fetchData(); }, [token, userInfo.sub]);
 
+  // ==============================
+  // Filter Logic
+  // ==============================
+  useEffect(() => {
+    let filtered = [...classes];
+
+    if (filterSubject !== "") {
+      filtered = filtered.filter(cls => cls.subject === filterSubject);
+    }
+
+    if (filterMonth !== "") {
+      const [year, month] = filterMonth.split("-");
+      filtered = filtered.filter(cls => {
+        const d = new Date(cls.classDate);
+        return d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month);
+      });
+    }
+
+    if (filterWeek !== "") {
+      filtered = filtered.filter(cls => {
+        const d = new Date(cls.classDate);
+        const weekNumber = Math.ceil((d.getDate() - 1) / 7) + 1;
+        return weekNumber === Number(filterWeek);
+      });
+    }
+
+    setFilteredClasses(filtered);
+  }, [filterMonth, filterWeek, filterSubject, classes]);
+
+  // ==============================
+  // Existing Functions
+  // ==============================
   const handleEnrollStudent = async (classId) => {
     if (!selectedStudent) return alert("Please select a student first");
     try {
@@ -86,7 +133,8 @@ export default function TeacherClassesPage() {
         `http://localhost:5000/api/classes/${classId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.data.success) setClasses(prev => prev.filter(c => c._id !== classId));
+      if (response.data.success)
+        setClasses(prev => prev.filter(c => c._id !== classId));
       else alert(response.data.message || "Failed to delete class");
     } catch (err) {
       console.error(err);
@@ -121,6 +169,9 @@ export default function TeacherClassesPage() {
     setExpandedStudents(prev => ({ ...prev, [classId]: !prev[classId] }));
   };
 
+  // ==============================
+  // UI
+  // ==============================
   return (
     <div style={{
       backgroundColor: "#1c1c1c",
@@ -138,11 +189,53 @@ export default function TeacherClassesPage() {
         Back to Dashboard
       </button>
 
-      <h1 style={{ fontSize: "2rem", marginBottom: "30px" }}>My Classes 👨‍🏫</h1>
-      {classes.length === 0 && <p>No classes created yet.</p>}
+      <h1 style={{ fontSize: "2rem", marginBottom: "20px" }}>My Classes 👨‍🏫</h1>
+
+      {/* ⭐ FILTER BAR */}
+      <div style={{
+        display: "flex",
+        gap: "15px",
+        marginBottom: "25px",
+        flexWrap: "wrap"
+      }}>
+
+        <select
+          value={filterSubject}
+          onChange={(e) => setFilterSubject(e.target.value)}
+          style={filterStyle}
+        >
+          <option value="">All Subjects</option>
+          <option value="Cloud Engineering">Cloud Engineering</option>
+          <option value="Cybersecurity">Cybersecurity</option>
+          <option value="Fintech">Fintech</option>
+          <option value="General IT">General IT</option>
+        </select>
+
+        <input
+          type="month"
+          value={filterMonth}
+          onChange={(e) => setFilterMonth(e.target.value)}
+          style={filterStyle}
+        />
+
+        <select
+          value={filterWeek}
+          onChange={(e) => setFilterWeek(e.target.value)}
+          style={filterStyle}
+        >
+          <option value="">All Weeks</option>
+          <option value="1">Week 1</option>
+          <option value="2">Week 2</option>
+          <option value="3">Week 3</option>
+          <option value="4">Week 4</option>
+          <option value="5">Week 5</option>
+        </select>
+      </div>
+
+      {filteredClasses.length === 0 && <p>No classes found.</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%", maxWidth: "800px" }}>
-        {classes.map((cls) => {
+        {filteredClasses.map((cls) => {
           const isHidden = cls.hidden;
           const isExpanded = expandedClasses[cls._id];
           const studentsExpanded = expandedStudents[cls._id];
@@ -153,10 +246,14 @@ export default function TeacherClassesPage() {
                 <>
                   <h2 style={{ margin: "0 0 10px 0" }}>{cls.subject}</h2>
                   <p>
-                    Classroom: {cls.classRoom} | Date: {new Date(cls.classDate).toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })} | Time: {new Date(`2000-01-01T${cls.classTime}`).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })} | Duration: {cls.classDuration} minutes
+                    Classroom: {cls.classRoom} |  
+                    Date: {new Date(cls.classDate).toLocaleDateString()} |  
+                    Time: {new Date(`2000-01-01T${cls.classTime}`).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} |  
+                    Duration: {cls.classDuration} minutes
                   </p>
                   <p>Enrolled Students: {cls.students.length}</p>
 
+                  {/* BUTTONS */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
                     <select
                       value={selectedStudent}
@@ -193,20 +290,26 @@ export default function TeacherClassesPage() {
                     <button onClick={() => handleDeleteClass(cls._id)} style={deleteButton}>Delete Class</button>
                   </div>
 
-                  {/* ====== Collapsible Enrolled Students List ====== */}
+                  {/* Enrolled Student List */}
                   <div style={{ marginTop: "15px" }}>
-                    <h4 style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => toggleStudentList(cls._id)}>
+                    <h4
+                      style={{ cursor: "pointer" }}
+                      onClick={() => toggleStudentList(cls._id)}
+                    >
                       Enrolled Students ({cls.students.length})
                       <span style={{ marginLeft: "8px" }}>{studentsExpanded ? "▲" : "▼"}</span>
                     </h4>
 
                     {studentsExpanded && (
                       <ul style={{ marginTop: "10px" }}>
-                        {cls.students.length === 0 && <p>No students enrolled</p>}
                         {cls.students.map(studentId => {
                           const student = students.find(s => s._id === studentId);
                           return (
-                            <li key={studentId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+                            <li key={studentId} style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              marginBottom: "5px"
+                            }}>
                               <span>{student ? `${student.name} (${student.email})` : studentId}</span>
                               <button onClick={() => handleRemoveStudent(cls._id, studentId)} style={removeButton}>Remove</button>
                             </li>
@@ -232,7 +335,9 @@ export default function TeacherClassesPage() {
   );
 }
 
+/* Styles */
 const backButtonStyle = { position: "absolute", top: "20px", right: "20px", padding: "10px 20px", fontSize: "14px", backgroundColor: "#f44336", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const filterStyle = { padding: "10px", borderRadius: "8px", backgroundColor: "#2c2c2c", border: "1px solid #555", color: "#fff" };
 const cardStyle = { backgroundColor: "#2c2c2c", padding: "20px", borderRadius: "12px", boxShadow: "0 0 10px rgba(0,0,0,0.5)" };
 const selectStyle = { padding: "8px", borderRadius: "6px", border: "1px solid #555", backgroundColor: "#1c1c1c", color: "#fff", minWidth: "180px" };
 const primaryButton = { padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#007bff", color: "#fff", cursor: "pointer" };

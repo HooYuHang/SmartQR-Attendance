@@ -12,50 +12,80 @@ const isOverlap = (start1, duration1, start2, duration2) => {
   return start1 < end2 && start2 < end1; // overlap if times intersect
 };
 
-// Create a class
+// Create a class (with optional batch for multiple weeks)
 export const createClass = async (req, res) => {
   try {
-    const { subject, classRoom, classDate, classTime, classDuration } = req.body;
+    const { subject, classRoom, classDate, classTime, classDuration, weeks } = req.body;
 
     if (!subject || !classRoom || !classDate || !classTime || !classDuration) {
       return res.json({ success: false, message: "All fields including duration are required" });
     }
 
-    // Get teacherId from token (req.user set by authMiddleware)
     const teacherId = req.user.id;
+    const startDate = new Date(`${classDate}T${classTime}`);
+    const totalWeeks = weeks && weeks > 1 ? weeks : 1;
 
-    // Combine date + time
-    const startTime = new Date(`${classDate}T${classTime}`);
+    const createdClasses = [];
+    const conflicts = [];
 
-    // Fetch classes on the same date
-    const classesOnDate = await Class.find({ classDate });
+    for (let i = 0; i < totalWeeks; i++) {
+      const classDateObj = new Date(startDate);
+      classDateObj.setDate(startDate.getDate() + i * 7); // add 7 days per week
 
-    // Check classroom conflicts
-    const roomConflict = classesOnDate.find(c =>
-      c.classRoom === classRoom && isOverlap(startTime, classDuration, new Date(`${c.classDate}T${c.classTime}`), c.classDuration)
-    );
-    if (roomConflict) {
-      return res.json({ success: false, message: `Classroom ${classRoom} is occupied during this time` });
+      const classDateStr = classDateObj.toISOString().split("T")[0];
+      const startTime = new Date(`${classDateStr}T${classTime}`);
+
+      // Fetch classes on this date
+      const classesOnDate = await Class.find({ classDate: classDateStr });
+
+      // Check classroom conflict
+      const roomConflict = classesOnDate.find(c =>
+        c.classRoom === classRoom && isOverlap(startTime, classDuration, new Date(`${c.classDate}T${c.classTime}`), c.classDuration)
+      );
+
+      // Check teacher conflict
+      const teacherConflict = classesOnDate.find(c =>
+        c.teacherId === teacherId && isOverlap(startTime, classDuration, new Date(`${c.classDate}T${c.classTime}`), c.classDuration)
+      );
+
+      if (roomConflict || teacherConflict) {
+        conflicts.push({
+          week: i + 1,
+          classDate: classDateStr,
+          message: roomConflict
+            ? `Classroom ${classRoom} is occupied`
+            : `You have another class at this time`,
+        });
+        continue; // skip creating this week
+      }
+
+      // Create class
+      const newClass = new Class({
+        subject,
+        classRoom,
+        classDate: classDateStr,
+        classTime,
+        classDuration,
+        teacherId,
+      });
+      await newClass.save();
+      createdClasses.push(newClass);
     }
 
-    // Check teacher conflicts
-    const teacherConflict = classesOnDate.find(c =>
-      c.teacherId === teacherId && isOverlap(startTime, classDuration, new Date(`${c.classDate}T${c.classTime}`), c.classDuration)
-    );
-    if (teacherConflict) {
-      return res.json({ success: false, message: `You already have another class during this time` });
-    }
-
-    // Create and save class
-    const newClass = new Class({ subject, classRoom, classDate, classTime, classDuration, teacherId });
-    await newClass.save();
-
-    res.json({ success: true, class: newClass });
+    res.json({
+      success: true,
+      createdClasses,
+      conflicts,
+      message: conflicts.length
+        ? "Some classes could not be created due to conflicts"
+        : "All classes created successfully",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Enroll student manually
 export const enrollStudent = async (req, res) => {
@@ -129,7 +159,7 @@ export const getAllStudents = async (req, res) => {
 // Get available subjects and class rooms
 export const getAvailableClasses = (req, res) => {
   try {
-    const subjects = ["Mathematics", "Physics", "Chemistry"];
+    const subjects = ["Cloud Engineering","Cybersecurity","FinTech","General IT"];
     const classRooms = ["101", "102", "103", "104"];
     res.json({ subjects, classRooms });
   } catch (err) {

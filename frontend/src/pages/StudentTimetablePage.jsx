@@ -5,30 +5,37 @@ import { getAccessToken, getUserInfo } from "../auth";
 
 export default function StudentTimetablePage() {
   const [timetable, setTimetable] = useState([]);
+  const [filteredTimetable, setFilteredTimetable] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
+  // Filter states
+  const [filterSubject, setFilterSubject] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterWeek, setFilterWeek] = useState("");
+
+  const navigate = useNavigate();
   const token = getAccessToken();
   const userInfo = getUserInfo();
 
+  // ==============================
+  // Fetch Timetable
+  // ==============================
   useEffect(() => {
     const fetchTimetable = async () => {
       try {
         const res = await axios.get(
           `http://localhost:5000/api/student/timetable/${userInfo.sub}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (res.data && res.data.success) {
-          // Sort by date + time descending (defensive - backend already sorts)
           const sortedClasses = res.data.timetable.sort((b, a) => {
             const dateB = new Date(`${a.classDate}T${a.classTime}`);
             const dateA = new Date(`${b.classDate}T${b.classTime}`);
             return dateB - dateA;
           });
           setTimetable(sortedClasses);
+          setFilteredTimetable(sortedClasses);
         }
       } catch (err) {
         console.error("Error fetching timetable:", err);
@@ -39,6 +46,35 @@ export default function StudentTimetablePage() {
 
     fetchTimetable();
   }, [token, userInfo.sub]);
+
+  // ==============================
+  // Filter Logic
+  // ==============================
+  useEffect(() => {
+    let filtered = [...timetable];
+
+    if (filterSubject !== "") {
+      filtered = filtered.filter(cls => cls.subject === filterSubject);
+    }
+
+    if (filterMonth !== "") {
+      const [year, month] = filterMonth.split("-");
+      filtered = filtered.filter(cls => {
+        const d = new Date(cls.classDate);
+        return d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month);
+      });
+    }
+
+    if (filterWeek !== "") {
+      filtered = filtered.filter(cls => {
+        const d = new Date(cls.classDate);
+        const weekNumber = Math.ceil((d.getDate() - 1) / 7) + 1;
+        return weekNumber === Number(filterWeek);
+      });
+    }
+
+    setFilteredTimetable(filtered);
+  }, [filterSubject, filterMonth, filterWeek, timetable]);
 
   if (loading) {
     return (
@@ -58,6 +94,24 @@ export default function StudentTimetablePage() {
     );
   }
 
+  // ==============================
+  // Determine row style based on datetime
+  // ==============================
+  const getRowStyle = (cls) => {
+    const classDateTime = new Date(`${cls.classDate}T${cls.classTime}`);
+    const now = new Date();
+
+    if (classDateTime < now) {
+      return { backgroundColor: "#555", color: "#ccc" }; // Past classes
+    } else if (
+      classDateTime.toDateString() === now.toDateString()
+    ) {
+      return { backgroundColor: "#FF9800", color: "#000" }; // Today
+    } else {
+      return { backgroundColor: "#2E7D32", color: "#fff" }; // Future classes
+    }
+  };
+
   return (
     <div
       style={{
@@ -73,7 +127,8 @@ export default function StudentTimetablePage() {
       <h1 style={{ fontSize: "36px", marginBottom: "30px", color: "#4CAF50" }}>
         📅 My Class Timetable
       </h1>
-      {/* Back to Dashboard button at top-right */}
+
+      {/* Back to Dashboard button */}
       <button
         onClick={() => navigate("/student/dashboard")}
         style={{
@@ -92,7 +147,43 @@ export default function StudentTimetablePage() {
       >
         Back to Dashboard
       </button>
-      {timetable.length === 0 ? (
+
+      {/* FILTER BAR */}
+      <div style={{ display: "flex", gap: "15px", marginBottom: "25px", flexWrap: "wrap" }}>
+        <select
+          value={filterSubject}
+          onChange={(e) => setFilterSubject(e.target.value)}
+          style={filterStyle}
+        >
+          <option value="">All Subjects</option>
+          <option value="Cloud Engineering">Cloud Engineering</option>
+          <option value="Cybersecurity">Cybersecurity</option>
+          <option value="Fintech">Fintech</option>
+          <option value="General IT">General IT</option>
+        </select>
+
+        <input
+          type="month"
+          value={filterMonth}
+          onChange={(e) => setFilterMonth(e.target.value)}
+          style={filterStyle}
+        />
+
+        <select
+          value={filterWeek}
+          onChange={(e) => setFilterWeek(e.target.value)}
+          style={filterStyle}
+        >
+          <option value="">All Weeks</option>
+          <option value="1">Week 1</option>
+          <option value="2">Week 2</option>
+          <option value="3">Week 3</option>
+          <option value="4">Week 4</option>
+          <option value="5">Week 5</option>
+        </select>
+      </div>
+
+      {filteredTimetable.length === 0 ? (
         <p style={{ fontSize: "20px" }}>
           You are not enrolled in any classes yet.
         </p>
@@ -102,7 +193,6 @@ export default function StudentTimetablePage() {
             width: "90%",
             maxWidth: "900px",
             borderCollapse: "collapse",
-            backgroundColor: "#333",
             borderRadius: "10px",
             overflow: "hidden",
           }}
@@ -118,22 +208,21 @@ export default function StudentTimetablePage() {
             </tr>
           </thead>
           <tbody>
-            {timetable.map((cls) => (
-              <tr key={cls._id} style={{ textAlign: "center" }}>
+            {filteredTimetable.map((cls) => (
+              <tr key={cls._id} style={{ textAlign: "center", ...getRowStyle(cls) }}>
                 <td style={tdStyle}>{cls.subject}</td>
                 <td style={tdStyle}>{cls.classRoom}</td>
                 <td style={tdStyle}>{cls.teacherName || "Unknown"}</td>
                 <td style={tdStyle}>
-                {new Date(cls.classDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                  {new Date(cls.classDate).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </td>
                 <td style={tdStyle}>
-                {new Date(`2000-01-01T${cls.classTime}`)
-                  .toLocaleTimeString("en-US", {
+                  {new Date(`2000-01-01T${cls.classTime}`).toLocaleTimeString("en-US", {
                     hour: "numeric",
                     minute: "2-digit",
                     hour12: true,
@@ -149,6 +238,7 @@ export default function StudentTimetablePage() {
   );
 }
 
+/* Styles */
 const thStyle = {
   padding: "15px",
   borderBottom: "2px solid #555",
@@ -159,4 +249,12 @@ const tdStyle = {
   padding: "12px",
   borderBottom: "1px solid #555",
   fontSize: "16px",
+};
+
+const filterStyle = {
+  padding: "10px",
+  borderRadius: "8px",
+  backgroundColor: "#2c2c2c",
+  border: "1px solid #555",
+  color: "#fff",
 };

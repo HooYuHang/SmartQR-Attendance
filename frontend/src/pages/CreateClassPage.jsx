@@ -7,6 +7,7 @@ export default function CreateClassPage() {
   const [classDate, setClassDate] = useState("");
   const [classTime, setClassTime] = useState("");
   const [classDuration, setClassDuration] = useState(120); // default 2 hours
+  const [weeks, setWeeks] = useState(1); // NEW: number of weeks
   const [subjects, setSubjects] = useState([]);
   const [classRooms, setClassRooms] = useState([]);
   const navigate = useNavigate();
@@ -40,12 +41,20 @@ export default function CreateClassPage() {
         "Content-Type": "application/json", 
         "Authorization": `Bearer ${token}` 
       },
-      body: JSON.stringify({ subject, classRoom, classDate, classTime, classDuration }),
+      body: JSON.stringify({ subject, classRoom, classDate, classTime, classDuration, weeks }),
     });
 
     const data = await response.json();
     if (data.success) {
-      alert("Class created successfully");
+      if (data.conflicts && data.conflicts.length > 0) {
+        let message = "Some classes could not be created due to conflicts:\n";
+        data.conflicts.forEach(c => {
+          message += `Week ${c.week} (${c.classDate}): ${c.message}\n`;
+        });
+        alert(message);
+      } else {
+        alert("All classes created successfully!");
+      }
       navigate("/teacher/dashboard");
     } else {
       alert(data.message || "Failed to create class");
@@ -123,6 +132,19 @@ export default function CreateClassPage() {
           <option value={60}>60 minutes</option>
           <option value={90}>90 minutes</option>
           <option value={120}>120 minutes</option>
+        </select>
+
+        {/* NEW: Number of Weeks */}
+        <select
+          value={weeks}
+          onChange={(e) => setWeeks(Number(e.target.value))}
+          style={inputStyle}
+        >
+          <option value={1}>1 week</option>
+          <option value={2}>2 weeks</option>
+          <option value={3}>3 weeks</option>
+          <option value={4}>4 weeks</option>
+          <option value={5}>5 weeks</option>
         </select>
 
         <button onClick={handleCreateClass} style={primaryButtonStyle}>
