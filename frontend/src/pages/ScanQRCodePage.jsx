@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function ScanQRCodePage() {
   const token = getAccessToken();
@@ -22,8 +23,8 @@ export default function ScanQRCodePage() {
       if (!token || !user?.sub) return;
 
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/student/timetable/${user.sub}`,
+        const res = await api.get(
+          `/api/student/timetable/${user.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -55,8 +56,8 @@ export default function ScanQRCodePage() {
       setAttendanceMessage("");
 
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/classes/${selectedClassId}/latest-qr`,
+        const res = await api.get(
+          `/api/classes/${selectedClassId}/latest-qr`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -83,8 +84,8 @@ export default function ScanQRCodePage() {
     setAttendanceMessage("");
 
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/classes/${selectedClassId}/mark-attendance`,
+      const res = await api.post(
+        `/api/classes/${selectedClassId}/mark-attendance`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

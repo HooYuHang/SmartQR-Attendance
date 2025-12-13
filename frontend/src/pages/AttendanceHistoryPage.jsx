@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function AttendanceHistoryPage() {
   const token = getAccessToken();
@@ -21,8 +22,8 @@ export default function AttendanceHistoryPage() {
       setError("");
 
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/student/timetable/${user.sub}`,
+        const res = await api.get(
+          `/api/student/timetable/${user.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

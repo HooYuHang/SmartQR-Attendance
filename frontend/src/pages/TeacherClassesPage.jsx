@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
+import api from "../api";
 
 export default function TeacherClassesPage() {
   const [classes, setClasses] = useState([]);
@@ -27,8 +28,8 @@ export default function TeacherClassesPage() {
   // ==============================
   const fetchData = async () => {
     try {
-      const classesRes = await axios.get(
-        `http://localhost:5000/api/created-classes/${userInfo.sub}`,
+      const classesRes = await api.get(
+        `/api/created-classes/${userInfo.sub}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -41,8 +42,8 @@ export default function TeacherClassesPage() {
       setClasses(sortedClasses);
       setFilteredClasses(sortedClasses);
 
-      const studentsRes = await axios.get(
-        "http://localhost:5000/api/students",
+      const studentsRes = await api.get(
+        "/api/students",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setStudents(studentsRes.data);
@@ -97,8 +98,8 @@ export default function TeacherClassesPage() {
   const handleEnrollStudent = async (classId) => {
     if (!selectedStudent) return alert("Please select a student first");
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/enroll-student",
+      const response = await api.post(
+        "/api/enroll-student",
         { classId, studentId: selectedStudent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -113,8 +114,8 @@ export default function TeacherClassesPage() {
   const handleRemoveStudent = async (classId, studentId) => {
     if (!window.confirm("Are you sure you want to remove this student?")) return;
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/remove-student",
+      const response = await api.post(
+        "/api/remove-student",
         { classId, studentId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -129,8 +130,8 @@ export default function TeacherClassesPage() {
   const handleDeleteClass = async (classId) => {
     if (!window.confirm("Are you sure you want to delete this class?")) return;
     try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/classes/${classId}`,
+      const response = await api.delete(
+        `/api/classes/${classId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.data.success)
@@ -147,8 +148,8 @@ export default function TeacherClassesPage() {
       const cls = classes.find(c => c._id === classId);
       const desiredHidden = show ? false : !cls.hidden;
 
-      const res = await axios.post(
-        "http://localhost:5000/api/classes/toggle-hide",
+      const res = await api.post(
+        "/api/classes/toggle-hide",
         { classId, hidden: desiredHidden },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -270,8 +271,8 @@ export default function TeacherClassesPage() {
 
                     <button onClick={async () => {
                       try {
-                        const response = await axios.post(
-                          "http://localhost:5000/api/enroll-all",
+                        const response = await api.post(
+                          "/api/enroll-all",
                           { classId: cls._id },
                           { headers: { Authorization: `Bearer ${token}` } }
                         );

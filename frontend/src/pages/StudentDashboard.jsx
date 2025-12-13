@@ -123,7 +123,7 @@ const StudentDashboard = () => {
             onMouseOver={(e) => handleHover(e, true)}
             onMouseOut={(e) => handleHover(e, false)}
           >
-            <span>📷 Scan QR to Mark Attendance</span> ➜
+            <span>📷 Mark Attendance</span> ➜
           </a>
 
           <a

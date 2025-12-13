@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function StudentFraudAlertPage() {
   const [frauds, setFrauds] = useState([]);
@@ -12,8 +13,8 @@ export default function StudentFraudAlertPage() {
   useEffect(() => {
     const fetchFraudAttempts = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/fraud/student/${userInfo.sub}`,
+        const res = await api.get(
+          `/api/fraud/student/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFrauds(res.data);

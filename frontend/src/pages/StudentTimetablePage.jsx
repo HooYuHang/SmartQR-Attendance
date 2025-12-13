@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
+import api from "../api";
 
 export default function StudentTimetablePage() {
   const [timetable, setTimetable] = useState([]);
@@ -23,8 +24,8 @@ export default function StudentTimetablePage() {
   useEffect(() => {
     const fetchTimetable = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/student/timetable/${userInfo.sub}`,
+        const res = await api.get(
+          `/api/student/timetable/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

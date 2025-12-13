@@ -1,7 +1,10 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000";
+const api = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL,
+});
 
+export default api;
 export async function markAttendance(sessionId, studentId) {
   try {
     const res = await axios.post(`${API_BASE}/attendance/mark`, {

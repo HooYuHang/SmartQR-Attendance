@@ -16,7 +16,7 @@ export default function CreateClassPage() {
   useEffect(() => {
     const fetchAvailableClasses = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/available-classes", {
+        const response = await fetch("${import.meta.env.VITE_BACKEND_URL}/api/available-classes", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -35,7 +35,7 @@ export default function CreateClassPage() {
       return;
     }
 
-    const response = await fetch("http://localhost:5000/api/classes", {
+    const response = await fetch("${import.meta.env.VITE_BACKEND_URL}/api/classes", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json", 

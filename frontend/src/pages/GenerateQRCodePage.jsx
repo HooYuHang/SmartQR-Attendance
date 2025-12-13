@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getAccessToken, getUserInfo } from "../auth";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function GenerateQRCodePage() {
   const [classes, setClasses] = useState([]);
@@ -16,8 +17,8 @@ export default function GenerateQRCodePage() {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/created-classes/${userInfo.sub}`,
+        const res = await api.get(
+          `/api/created-classes/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setClasses(res.data);
@@ -38,8 +39,8 @@ export default function GenerateQRCodePage() {
       }
 
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/classes/${selectedClass}/latest-qr`,
+        const res = await api.get(
+          `/api/classes/${selectedClass}/latest-qr`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.data.success) {
@@ -62,8 +63,8 @@ export default function GenerateQRCodePage() {
     if (!selectedClass) return alert("Select a class first");
 
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/classes/${selectedClass}/generate-qr`,
+      const res = await api.post(
+        `/api/classes/${selectedClass}/generate-qr`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { getAccessToken } from "../auth";
+import api from "../api";
 
 export default function AttendancePage() {
   const { classId } = useParams();
@@ -19,15 +20,15 @@ export default function AttendancePage() {
         setLoading(true);
 
         // Fetch class details
-        const classRes = await axios.get(
-          `http://localhost:5000/api/classes/${classId}`,
+        const classRes = await api.get(
+          `/api/classes/${classId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setClassInfo(classRes.data);
 
         // Fetch attendance (correct backend route)
-        const attRes = await axios.get(
-          `http://localhost:5000/api/classes/${classId}/attendance`,
+        const attRes = await api.get(
+          `/api/classes/${classId}/attendance`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

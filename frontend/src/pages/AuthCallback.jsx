@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { setTokensAndUser } from "../auth";  // Import the function to store user info
 import axios from "axios";
+import api from "../api";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function AuthCallback() {
         const userRole = decodedToken["cognito:groups"] ? decodedToken["cognito:groups"][0] : "student";
 
         // Send user info to the backend to store in MongoDB
-        await axios.post("http://localhost:5000/auth/save-user", {
+        await api.post("/auth/save-user", {
           cognito_id,
           email,
           name,
@@ -32,7 +33,7 @@ export default function AuthCallback() {
         });
 
         // Fetch the user's role from the backend (MongoDB)
-        const roleResponse = await axios.get("http://localhost:5000/auth/user-role", {
+        const roleResponse = await api.get("/auth/user-role", {
           params: { cognito_id }, // Pass cognito_id to fetch the role
         });
 
