@@ -2,7 +2,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import serverless from "serverless-http";
 
 import classRoutes from "./routes/classRoutes.js";
 import { verifyToken } from "./middleware/authMiddleware.js";
@@ -15,7 +14,7 @@ dotenv.config();
 
 const app = express();
 
-// Trust proxy (important for IP)
+// Trust proxy (important for IP detection behind Lambda/API Gateway)
 app.set("trust proxy", true);
 
 // Middleware
@@ -26,10 +25,9 @@ app.use(
       "https://www.smartqr-attendance.online",
       "http://localhost:5173"
     ],
-    credentials: true
+    credentials: true,
   })
 );
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -41,23 +39,38 @@ if (mongoose.connection.readyState === 0) {
     .catch(err => console.error("MongoDB error:", err));
 }
 
-// Routes
-app.use("/api", classRoutes);
-app.use("/api/classes", classRoutes);
-app.use("/auth", authRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/classes", attendanceRoutes);
-app.use("/api", ipRoutes);
+// -------------------------
+// Routes (clean, no /api prefix)
+// -------------------------
 
-// Protected route
+// Auth routes
+app.use("/auth", authRoutes);
+
+// Class routes
+app.use("/classes", classRoutes);
+
+// Attendance routes
+app.use("/classes", attendanceRoutes);
+
+// Student routes
+app.use("/students", studentRoutes);
+
+// IP routes
+app.use("/", ipRoutes); // assuming IP routes are like /ip or /get-my-ip
+
+// Protected test route
 app.get("/student/me", verifyToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Test route
+// Test root route
 app.get("/", (req, res) => {
   res.json({ message: "SmartQR Attendance API" });
 });
 
-// ✅ Lambda handler
-export const handler = serverless(app);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
