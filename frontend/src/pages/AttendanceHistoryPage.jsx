@@ -23,7 +23,7 @@ export default function AttendanceHistoryPage() {
 
       try {
         const res = await api.get(
-          `/api/student/timetable/${user.sub}`,
+          `/student/timetable/${user.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

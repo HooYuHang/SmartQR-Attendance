@@ -21,14 +21,14 @@ export default function AttendancePage() {
 
         // Fetch class details
         const classRes = await api.get(
-          `/api/classes/${classId}`,
+          `/classes/${classId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setClassInfo(classRes.data);
 
         // Fetch attendance (correct backend route)
         const attRes = await api.get(
-          `/api/classes/${classId}/attendance`,
+          `/classes/${classId}/attendance`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

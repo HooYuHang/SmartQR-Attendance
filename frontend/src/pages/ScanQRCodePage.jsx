@@ -24,7 +24,7 @@ export default function ScanQRCodePage() {
 
       try {
         const res = await api.get(
-          `/api/student/timetable/${user.sub}`,
+          `/student/timetable/${user.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -57,7 +57,7 @@ export default function ScanQRCodePage() {
 
       try {
         const res = await api.get(
-          `/api/classes/${selectedClassId}/latest-qr`,
+          `/classes/${selectedClassId}/latest-qr`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -85,7 +85,7 @@ export default function ScanQRCodePage() {
 
     try {
       const res = await api.post(
-        `/api/classes/${selectedClassId}/mark-attendance`,
+        `/classes/${selectedClassId}/mark-attendance`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

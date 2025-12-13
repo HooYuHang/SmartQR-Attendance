@@ -14,7 +14,7 @@ export default function StudentFraudAlertPage() {
     const fetchFraudAttempts = async () => {
       try {
         const res = await api.get(
-          `/api/fraud/student/${userInfo.sub}`,
+          `/fraud/student/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFrauds(res.data);

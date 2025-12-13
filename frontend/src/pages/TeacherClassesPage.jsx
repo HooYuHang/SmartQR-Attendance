@@ -29,7 +29,7 @@ export default function TeacherClassesPage() {
   const fetchData = async () => {
     try {
       const classesRes = await api.get(
-        `/api/created-classes/${userInfo.sub}`,
+        `/created-classes/${userInfo.sub}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -43,7 +43,7 @@ export default function TeacherClassesPage() {
       setFilteredClasses(sortedClasses);
 
       const studentsRes = await api.get(
-        "/api/students",
+        "/students",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setStudents(studentsRes.data);
@@ -99,7 +99,7 @@ export default function TeacherClassesPage() {
     if (!selectedStudent) return alert("Please select a student first");
     try {
       const response = await api.post(
-        "/api/enroll-student",
+        "/enroll-student",
         { classId, studentId: selectedStudent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -115,7 +115,7 @@ export default function TeacherClassesPage() {
     if (!window.confirm("Are you sure you want to remove this student?")) return;
     try {
       const response = await api.post(
-        "/api/remove-student",
+        "/remove-student",
         { classId, studentId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -131,7 +131,7 @@ export default function TeacherClassesPage() {
     if (!window.confirm("Are you sure you want to delete this class?")) return;
     try {
       const response = await api.delete(
-        `/api/classes/${classId}`,
+        `/classes/${classId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.data.success)
@@ -149,7 +149,7 @@ export default function TeacherClassesPage() {
       const desiredHidden = show ? false : !cls.hidden;
 
       const res = await api.post(
-        "/api/classes/toggle-hide",
+        "/classes/toggle-hide",
         { classId, hidden: desiredHidden },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -272,7 +272,7 @@ export default function TeacherClassesPage() {
                     <button onClick={async () => {
                       try {
                         const response = await api.post(
-                          "/api/enroll-all",
+                          "/enroll-all",
                           { classId: cls._id },
                           { headers: { Authorization: `Bearer ${token}` } }
                         );

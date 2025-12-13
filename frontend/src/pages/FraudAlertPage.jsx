@@ -12,7 +12,7 @@ export default function FraudAlertPage() {
   useEffect(() => {
     const fetchFraudAttempts = async () => {
       try {
-        const res = await api.get(`/api/fraud/all`, {
+        const res = await api.get(`/fraud/all`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFrauds(res.data);

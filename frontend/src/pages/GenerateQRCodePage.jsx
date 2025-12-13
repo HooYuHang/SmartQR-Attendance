@@ -18,7 +18,7 @@ export default function GenerateQRCodePage() {
     const fetchClasses = async () => {
       try {
         const res = await api.get(
-          `/api/created-classes/${userInfo.sub}`,
+          `/created-classes/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setClasses(res.data);
@@ -40,7 +40,7 @@ export default function GenerateQRCodePage() {
 
       try {
         const res = await api.get(
-          `/api/classes/${selectedClass}/latest-qr`,
+          `/classes/${selectedClass}/latest-qr`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.data.success) {
@@ -64,7 +64,7 @@ export default function GenerateQRCodePage() {
 
     try {
       const res = await api.post(
-        `/api/classes/${selectedClass}/generate-qr`,
+        `/classes/${selectedClass}/generate-qr`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

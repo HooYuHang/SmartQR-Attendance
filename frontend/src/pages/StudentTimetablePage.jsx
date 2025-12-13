@@ -25,7 +25,7 @@ export default function StudentTimetablePage() {
     const fetchTimetable = async () => {
       try {
         const res = await api.get(
-          `/api/student/timetable/${userInfo.sub}`,
+          `/student/timetable/${userInfo.sub}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
