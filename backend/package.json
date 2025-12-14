@@ -1,33 +1,28 @@
 {
-  "name": "backend",
+  "name": "smartqr-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "type": "module",
-
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
     "dev": "nodemon app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "aws-sdk": "^2.1693.0",
-    "aws-serverless-express": "^3.4.0",
     "axios": "^1.13.2",
-    "body-parser": "^2.2.0",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "ip": "^2.0.1",
     "jsonwebtoken": "^9.0.2",
     "jwk-to-pem": "^2.0.7",
-    "mongoose": "^8.19.3",
+    "mongoose": "^8.9.5",
     "qrcode": "^1.5.4",
-    "serverless-http": "^4.0.0",
-    "uuid": "^13.0.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
