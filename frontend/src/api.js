@@ -1,13 +1,23 @@
 import axios from "axios";
+import { getAccessToken } from "./auth";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
 });
 
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;
+
 export async function markAttendance(sessionId, studentId) {
   try {
-    const res = await axios.post(`${API_BASE}/attendance/mark`, {
+    const res = await api.post(`${API_BASE}/attendance/mark`, {
       sessionId,
       studentId,
     });

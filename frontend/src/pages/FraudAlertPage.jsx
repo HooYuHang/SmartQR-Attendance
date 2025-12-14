@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { getAccessToken } from "../auth";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
