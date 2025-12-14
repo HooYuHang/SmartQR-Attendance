@@ -25,9 +25,12 @@ app.use(
       "https://www.smartqr-attendance.online",
       "http://localhost:5173"
     ],
+    methods: ["GET","HEAD","OPTIONS","PUT","PATCH","POST","DELETE"],
+    allowedHeaders: ["Authorization","Content-Type"],
     credentials: true
   })
 );
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
