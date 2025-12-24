@@ -1,3 +1,4 @@
+// app.js
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -9,64 +10,47 @@ import studentRoutes from "./routes/studentRoutes.js";
 import ipRoutes from "./routes/ipRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import { verifyToken } from "./middleware/authMiddleware.js";
+import fraudRoutes from "./routes/fraudRoutes.js";
 
 dotenv.config();
 
 const app = express();
 
-// Trust proxy (CloudFront / EB)
+// ⭐ REQUIRED for real IP behind Nginx
 app.set("trust proxy", true);
 
-// CORS
-app.use(
-  cors({
-    origin: [
-      "https://smartqr-attendance.online",
-      "https://www.smartqr-attendance.online",
-      "http://localhost:5173"
-    ],
-    methods: ["GET","HEAD","OPTIONS","PUT","PATCH","POST","DELETE"],
-    allowedHeaders: ["Authorization","Content-Type"],
-    credentials: true
-  })
-);
-
+// Simple CORS (same domain via Nginx)
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// -------------------------
 // Routes
-// -------------------------
 app.use("/auth", authRoutes);
-app.use("/", classRoutes);
+app.use("/classes", classRoutes);
 app.use("/attendance", attendanceRoutes);
 app.use("/students", studentRoutes);
 app.use("/ip", ipRoutes);
+app.use("/fraud", fraudRoutes);
 
-// Protected test
+// Test protected route
 app.get("/student/me", verifyToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Health check (VERY IMPORTANT FOR EB)
+// Health check
 app.get("/", (req, res) => {
-  res.json({ message: "SmartQR Attendance API" });
+  res.json({ message: "SmartQR Attendance API running" });
 });
 
-// -------------------------
-// START SERVER FIRST
-// -------------------------
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
-
-// -------------------------
-// CONNECT TO MONGO AFTER
-// -------------------------
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    app.listen(PORT, () =>
+      console.log(`🚀 Server running on port ${PORT}`)
+    );
+  })
   .catch((err) => console.error("❌ MongoDB error:", err));

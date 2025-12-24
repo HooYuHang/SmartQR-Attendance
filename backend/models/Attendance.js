@@ -6,6 +6,9 @@ const attendanceSchema = new mongoose.Schema({
   status: { type: String, enum: ["present", "absent"], required: true },
   timestamp: { type: Date, default: Date.now },
   isFraud: { type: Boolean, default: false },
+
+  ipAddress: { type: String, required: true },
+
 });
 
 export default mongoose.model("Attendance", attendanceSchema);
